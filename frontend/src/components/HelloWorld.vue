@@ -1,19 +1,13 @@
 <template>
   <div class="hello">
     <h1>{{ msg }}</h1>
-    
-    <div
-          style="margin-top: 8px;
-                    white-space: pre-line;
-                    padding: 8px;
-                    background-color: black;
-                    font-size:14px;
-                    color: white;height: 580px;overflow-y: scroll; width:960px;word-wrap:break-word;text-align:left"
-        >{{stdout}}</div>
 
-    
+    <div
+      style="margin-top: 8px;white-space: pre-line;padding: 8px; background-color: black; font-size:14px; color: white;height: 580px;overflow-y: scroll; width:960px;word-wrap:break-word;text-align:left"
+    >{{stdout}}</div>
+
     <p>stderr:</p>
-     {{stderr}}
+    {{stderr}}
   </div>
 </template>
 
@@ -25,24 +19,28 @@ export default {
   data() {
     return {
       msg: "Welcome to Your Vue.js App",
-      stdout:"",
-      stderr:""
+      stdout: "",
+      stderr: ""
     };
   },
-  methods:{
+  methods: {
     ffmpegVersion() {
       // var ffmpeg = require("ffmpeg.js/ffmpeg-mp4.js");
-      
+
       var _this = this;
       // Print FFmpeg's version.
       FFmpeg({
         arguments: ["-codecs"],
-        print: function(data) { _this.stdout += data + "\n"; },
-        printErr: function(data) { _this.stderr += data + "\n"; },
+        print: function(data) {
+          _this.stdout += data + "\n";
+        },
+        printErr: function(data) {
+          _this.stderr += data + "\n";
+        },
         onExit: function(code) {
           console.log("Process exited with code " + code);
           console.log(_this.stdout);
-        },
+        }
       });
     }
   },
