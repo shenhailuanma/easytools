@@ -45,7 +45,9 @@ export default {
       msg: "Snapshot",
       aotoUploadFlag: true,
       sourceVideoUrl: "",
+      sourceName: "",
       outputPictureUrl: "",
+      outputName: "",
       stdout: "",
       stderr: "",
       testData: ""
@@ -78,13 +80,37 @@ export default {
 
       var reader = new FileReader();
       var _this = this;
-      reader.onload = function(evt) {
-        console.log(evt.target.result);
-        _this.testData = evt.target.result;
-        writeFileSync("source.mp4", evt.target.result);
+
+      reader.onloadstart = function() {
+        console.log("FileReader onloadstart");
       };
-      reader.readAsBinaryString(params.file);
+      reader.onprogress = function() {
+        console.log("FileReader onprogress");
+      };
+      reader.onloadend = function() {
+        console.log("FileReader onloadend");
+      };
+      reader.onprogress = function() {
+        console.log("FileReader onprogress");
+      };
+      reader.onabort = function() {
+        console.log("FileReader onabort");
+      };
+
+      reader.onload = function(evt) {
+        console.log("FileReader onload");
+        console.log(evt.target);
+        // console.log(evt.target.result.byteLength);
+        // _this.testData = evt.target.result;
+        console.log(evt.target.result);
+
+        // let testData = new Uint8Array(evt.target.result);
+        _this.testData = new Uint8Array(evt.target.result);
+        // writeFileSync("source.mp4", evt.target.result);
+      };
+      //   reader.readAsBinaryString(params.file);
       //   reader.readAsText(params.file, "UTF-8");
+      reader.readAsArrayBuffer(params.file);
     },
     handleButton() {
       console.log("handleButton");
@@ -95,29 +121,50 @@ export default {
       var _this = this;
       this.stdout = "";
       this.stderr = "";
-      var testData = new Uint8Array(readFileSync("source.mp4"));
+
+      console.log(_this.testData);
+
+      //   var testData = new Uint8Array(readFileSync("source.mp4"));
+      //   var testData = new Uint8Array(this.testData);
+
+      //   arguments: ["-i", "source.mp4", "-c", "copy", "output.mp4"],
 
       // Print FFmpeg's version.
       var result = FFmpeg({
-        MEMFS: [{ name: "source.mp4", data: testData }],
-        arguments: ["-i", "source.mp4", "-y", "output.mp4"],
+        MEMFS: [{ name: "source", data: _this.testData }],
+        arguments: [
+          "-nostdin",
+          "-i",
+          "source",
+          "-c:v",
+          "h264",
+          "-f",
+          "mp4",
+          "-y",
+          "output.mp4"
+        ],
         print: function(data) {
+          console.log("stdio:" + data);
           _this.stdout += data + "\n";
         },
         printErr: function(data) {
+          console.log("stderr:" + data);
           _this.stderr += data + "\n";
         },
         onExit: function(code) {
           console.log("Process exited with code " + code);
+        },
+        stdin: function() {
+          console.log("stdin:");
         }
       });
 
       console.log("result:");
       console.log(result);
       // Write out.webm to disk.
-      var output = result.MEMFS[0];
-      console.log("output.name:" + output.name);
-      writeFileSync(output.name, Buffer(output.data));
+      //   var output = result.MEMFS[0];
+      //   console.log("output.name:" + output.name);
+      //   writeFileSync(output.name, Buffer(output.data));
     }
   },
   mounted: function() {
