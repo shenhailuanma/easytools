@@ -30,7 +30,7 @@ export default {
       var _this = this;
       // Print FFmpeg's version.
       FFmpeg({
-        arguments: ["-codecs"],
+        arguments: ["-encoders"],
         print: function(data) {
           _this.stdout += data + "\n";
         },

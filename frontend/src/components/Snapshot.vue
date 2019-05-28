@@ -1,23 +1,40 @@
 <template>
   <div class="Snapshot">
-    <el-upload
-      class="avatar-uploader"
-      action="/"
-      :show-file-list="false"
-      :on-success="handleUploadSuccess"
-      :before-upload="handleBeforeUpload"
-      :on-remove="handleRemove"
-      :on-preview="handlePreview"
-      :auto-upload="aotoUploadFlag"
-      :http-request="uploadFile"
-    >
-      <!-- <img v-if="sourceVideoUrl" :src="sourceVideoUrl" class="avatar"> -->
-      <video v-if="sourceVideoUrl" :src="sourceVideoUrl" controls="controls" class="avatar"></video>
-      <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-    </el-upload>
-
-    <img v-if="outputPictureUrl" :src="outputPictureUrl" class="avatar">
-    <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+    <el-row>
+      <el-col :span="11">
+        <el-card class="box-card">
+          <el-upload
+            class="avatar-uploader"
+            action="/"
+            :show-file-list="false"
+            :on-success="handleUploadSuccess"
+            :before-upload="handleBeforeUpload"
+            :on-remove="handleRemove"
+            :on-preview="handlePreview"
+            :auto-upload="aotoUploadFlag"
+            :http-request="uploadFile"
+          >
+            <!-- <img v-if="sourceVideoUrl" :src="sourceVideoUrl" class="avatar"> -->
+            <video v-if="sourceVideoUrl" :src="sourceVideoUrl" controls="controls" class="avatar"></video>
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+        </el-card>
+      </el-col>
+      <el-col :span="2">
+        <div class="grid-content bg-purple-light">
+          <br>
+          <el-button v-on:click="doTranscodeGif" size="small" type="primary" round>gif</el-button>
+          <br>
+          <el-button size="small" type="primary" round>截图</el-button>
+        </div>
+      </el-col>
+      <el-col :span="11">
+        <el-card class="box-card">
+          <img v-if="outputPictureUrl" :src="outputPictureUrl" class="avatar">
+          <i v-else class="el-icon-loading avatar-uploader-icon"></i>
+        </el-card>
+      </el-col>
+    </el-row>
 
     <br>
     <el-button v-on:click="handleButton" type="warning" icon="el-icon-star-off" circle></el-button>
@@ -46,11 +63,11 @@ export default {
       aotoUploadFlag: true,
       sourceVideoUrl: "",
       sourceName: "",
+      sourceData: "",
       outputPictureUrl: "",
       outputName: "",
       stdout: "",
-      stderr: "",
-      testData: ""
+      stderr: ""
     };
   },
   methods: {
@@ -101,11 +118,11 @@ export default {
         console.log("FileReader onload");
         console.log(evt.target);
         // console.log(evt.target.result.byteLength);
-        // _this.testData = evt.target.result;
+
         console.log(evt.target.result);
 
-        // let testData = new Uint8Array(evt.target.result);
-        _this.testData = new Uint8Array(evt.target.result);
+        // let sourceData = new Uint8Array(evt.target.result);
+        _this.sourceData = new Uint8Array(evt.target.result);
         // writeFileSync("source.mp4", evt.target.result);
       };
       //   reader.readAsBinaryString(params.file);
@@ -122,16 +139,16 @@ export default {
       this.stdout = "";
       this.stderr = "";
 
-      console.log(_this.testData);
+      console.log(_this.sourceData);
 
-      //   var testData = new Uint8Array(readFileSync("source.mp4"));
-      //   var testData = new Uint8Array(this.testData);
+      //   var sourceData = new Uint8Array(readFileSync("source.mp4"));
+      //   var sourceData = new Uint8Array(this.sourceData);
 
       //   arguments: ["-i", "source.mp4", "-c", "copy", "output.mp4"],
 
       // Print FFmpeg's version.
       var result = FFmpeg({
-        MEMFS: [{ name: "source", data: _this.testData }],
+        MEMFS: [{ name: "source", data: _this.sourceData }],
         arguments: [
           "-nostdin",
           "-i",
@@ -165,6 +182,76 @@ export default {
       //   var output = result.MEMFS[0];
       //   console.log("output.name:" + output.name);
       //   writeFileSync(output.name, Buffer(output.data));
+    },
+    doTranscodeGif() {
+      console.log("handleButton");
+
+      var _this = this;
+      this.stdout = "";
+      this.stderr = "";
+
+      var result = FFmpeg({
+        MEMFS: [{ name: "source", data: _this.sourceData }],
+        arguments: ["-nostdin", "-i", "source", "-y", "output.gif"],
+        print: function(data) {
+          // console.log("stdio:" + data);
+          _this.stdout += data + "\n";
+        },
+        printErr: function(data) {
+          // console.log("stderr:" + data);
+          _this.stderr += data + "\n";
+        },
+        onExit: function(code) {
+          console.log("Process exited with code " + code);
+        },
+        stdin: function() {
+          console.log("stdin:");
+        }
+      });
+
+      console.log("result:");
+      console.log(result);
+
+      // Write to disk.
+      //   var output = result.MEMFS[0];
+      //   console.log("output.name:" + output.name);
+      //   writeFileSync(output.name, Buffer(output.data));
+    },
+    doSnapshot() {
+      console.log("doSnapshot");
+
+      var _this = this;
+      this.stdout = "";
+      this.stderr = "";
+
+      var result = FFmpeg({
+        MEMFS: [{ name: "source", data: _this.sourceData }],
+        arguments: [
+          "-nostdin",
+          "-i",
+          "source",
+          "-c:v",
+          "h264",
+          "-f",
+          "mp4",
+          "-y",
+          "output.mp4"
+        ],
+        print: function(data) {
+          console.log("stdio:" + data);
+          _this.stdout += data + "\n";
+        },
+        printErr: function(data) {
+          console.log("stderr:" + data);
+          _this.stderr += data + "\n";
+        },
+        onExit: function(code) {
+          console.log("Process exited with code " + code);
+        },
+        stdin: function() {
+          console.log("stdin:");
+        }
+      });
     }
   },
   mounted: function() {
